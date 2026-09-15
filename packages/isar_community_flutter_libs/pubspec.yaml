@@ -22,7 +22,8 @@ platforms:
 dependencies:
   flutter:
     sdk: flutter
-  isar_community: 3.3.2
+  isar_community:
+    path: ../isar_community
 
 flutter:
   plugin:
@@ -38,7 +39,3 @@ flutter:
         pluginClass: IsarFlutterLibsPlugin
       windows:
         pluginClass: IsarFlutterLibsPlugin
-
-dependency_overrides:
-  isar_community:
-    path: ../isar_community
