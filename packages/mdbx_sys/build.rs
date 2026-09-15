@@ -1,8 +1,8 @@
 use bindgen::{Formatter, callbacks::{IntKind, ParseCallbacks}};
 use std::{env, fs, path::{Path, PathBuf}, process::Command};
 
-const LIBMDBX_REPO: &str = "https://github.com/isar-community/libmdbx.git";
-const LIBMDBX_TAG: &str = "v0.13.8-temp-upstream-fix";
+const LIBMDBX_REPO: &str = "https://github.com/erthink/libmdbx.git";
+const LIBMDBX_TAG: &str = "v0.14.3";
 
 #[derive(Debug)]
 struct Callbacks;
@@ -167,7 +167,10 @@ fn main() {
     }
 
     if cfg!(debug_assertions) {
-        cc_builder.define("MDBX_FORCE_ASSERTIONS", "1");
+        // MDBX_FORCE_ASSERTIONS was deprecated in libmdbx 0.14; MDBX_CHECKING is
+        // the replacement. Level 2 matches the old flag's behaviour (see the
+        // MDBX_FORCE_ASSERTIONS -> MDBX_CHECKING=2 shim in mdbx-internals.h).
+        cc_builder.define("MDBX_CHECKING", "2");
     } else {
         cc_builder.define("NDEBUG", "1");
     }
