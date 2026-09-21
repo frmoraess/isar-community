@@ -45,14 +45,18 @@ def androidLibs = [
 ]
 
 task downloadIsarBinaries {
-    androidLibs.each { abi, remoteName ->
-        def destFile = file("src/main/jniLibs/${abi}/libisar.so")
-        if (!destFile.exists()) {
-            destFile.parentFile.mkdirs()
-            def url = "${ISAR_BINARIES_BASE_URL}/${remoteName}"
-            println "Downloading ${remoteName} for ${abi}..."
-            new URL(url).withInputStream { input ->
-                destFile.withOutputStream { output -> output << input }
+    doFirst {
+        androidLibs.each { abi, remoteName ->
+            def destFile = file("src/main/jniLibs/${abi}/libisar.so")
+            if (!destFile.exists()) {
+                destFile.parentFile.mkdirs()
+                def url = "${ISAR_BINARIES_BASE_URL}/${remoteName}"
+                println "Downloading ${remoteName} for ${abi} from ${url}..."
+                ant.get(src: url, dest: destFile.absolutePath, retries: 3)
+                if (!destFile.exists() || destFile.size() == 0) {
+                    throw new GradleException("Failed to download ${url}")
+                }
+                println "Downloaded ${remoteName} (${destFile.size()} bytes)"
             }
         }
     }
