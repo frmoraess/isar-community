@@ -6,6 +6,24 @@ project(${PROJECT_NAME} LANGUAGES CXX)
 # not be changed
 set(PLUGIN_NAME "isar_community_flutter_libs_plugin")
 
+# Download libisar.dll if not present (e.g. when using the package as a git dependency)
+set(ISAR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/libisar.dll")
+if(NOT EXISTS "${ISAR_LIB}")
+  set(ISAR_BINARIES_TAG "binaries-libmdbx-0.14.3")
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|arm64")
+    set(ISAR_DLL_NAME "isar_windows_arm64.dll")
+  else()
+    set(ISAR_DLL_NAME "isar_windows_x64.dll")
+  endif()
+  set(ISAR_DOWNLOAD_URL "https://github.com/frmoraess/isar-community/releases/download/${ISAR_BINARIES_TAG}/${ISAR_DLL_NAME}")
+  message(STATUS "Downloading libisar.dll from ${ISAR_DOWNLOAD_URL}")
+  file(DOWNLOAD "${ISAR_DOWNLOAD_URL}" "${ISAR_LIB}" SHOW_PROGRESS STATUS DOWNLOAD_STATUS)
+  list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
+  if(NOT STATUS_CODE EQUAL 0)
+    message(FATAL_ERROR "Failed to download libisar.dll: ${DOWNLOAD_STATUS}")
+  endif()
+endif()
+
 add_library(${PLUGIN_NAME} SHARED
   "isar_community_flutter_libs_plugin.cpp"
 )
@@ -17,8 +35,7 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 
-# List of absolute paths to libraries that should be bundled with the plugin
 set(isar_community_flutter_libs_bundled_libraries
-  "${CMAKE_CURRENT_SOURCE_DIR}/libisar.dll"
+  "${ISAR_LIB}"
   PARENT_SCOPE
 )
