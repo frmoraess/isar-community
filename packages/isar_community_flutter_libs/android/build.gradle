@@ -33,3 +33,33 @@ android {
 dependencies {
     implementation "androidx.startup:startup-runtime:1.1.1"
 }
+
+def ISAR_BINARIES_TAG = "binaries-libmdbx-0.14.3"
+def ISAR_BINARIES_BASE_URL = "https://github.com/frmoraess/isar-community/releases/download/${ISAR_BINARIES_TAG}"
+
+def androidLibs = [
+    "arm64-v8a"  : "libisar_android_arm64.so",
+    "armeabi-v7a": "libisar_android_armv7.so",
+    "x86_64"     : "libisar_android_x64.so",
+    "x86"        : "libisar_android_x86.so",
+]
+
+task downloadIsarBinaries {
+    doFirst {
+        androidLibs.each { abi, remoteName ->
+            def destFile = file("src/main/jniLibs/${abi}/libisar.so")
+            if (!destFile.exists()) {
+                destFile.parentFile.mkdirs()
+                def url = "${ISAR_BINARIES_BASE_URL}/${remoteName}"
+                println "Downloading ${remoteName} for ${abi} from ${url}..."
+                ant.get(src: url, dest: destFile.absolutePath, retries: 3)
+                if (!destFile.exists() || destFile.size() == 0) {
+                    throw new GradleException("Failed to download ${url}")
+                }
+                println "Downloaded ${remoteName} (${destFile.size()} bytes)"
+            }
+        }
+    }
+}
+
+preBuild.dependsOn downloadIsarBinaries
