@@ -1,0 +1,6 @@
+analyzer:
+  errors:
+    # Path dependency on the sibling isar_community package is intentional so
+    # git-dependency consumers resolve the in-repo copy; restored to a version
+    # constraint at release time.
+    invalid_dependency: ignore
