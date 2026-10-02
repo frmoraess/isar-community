@@ -119,29 +119,25 @@ class IsarCollectionImpl<OBJ> extends IsarCollection<OBJ> {
     Pointer<CObject> objectsPtr,
     List<OBJ> objects,
   ) {
-    var maxBufferSize = 0;
     for (var i = 0; i < objects.length; i++) {
       final object = objects[i];
-      maxBufferSize += schema.estimateSize(object, _offsets, isar.offsets);
-    }
-    final bufferPtr = txn.alloc<Uint8>(maxBufferSize);
-    final buffer = bufferPtr.asTypedList(maxBufferSize).buffer;
+      final estimatedSize = schema.estimateSize(object, _offsets, isar.offsets);
 
-    var writtenBytes = 0;
-    for (var i = 0; i < objects.length; i++) {
-      final objBuffer = buffer.asUint8List(writtenBytes);
-      final binaryWriter = IsarWriterImpl(objBuffer, _staticSize);
-
-      final object = objects[i];
+      // Serialize into the shared scratch buffer to measure exact size.
+      final scratchPtr = txn.getBuffer(estimatedSize);
+      final scratchList = scratchPtr.asTypedList(estimatedSize);
+      final binaryWriter = IsarWriterImpl(scratchList, _staticSize);
       schema.serialize(object, binaryWriter, _offsets, isar.offsets);
-      final size = binaryWriter.usedBytes;
+      final exactSize = binaryWriter.usedBytes;
+
+      // Allocate exactly what was written and copy the serialized bytes.
+      final exactPtr = txn.alloc<Uint8>(exactSize);
+      exactPtr.asTypedList(exactSize).setRange(0, exactSize, scratchList);
 
       final cObj = (objectsPtr + i).ref;
       cObj.id = schema.getId(object);
-      cObj.buffer = bufferPtr + writtenBytes;
-      cObj.buffer_length = size;
-
-      writtenBytes += size;
+      cObj.buffer = exactPtr;
+      cObj.buffer_length = exactSize;
     }
   }
 

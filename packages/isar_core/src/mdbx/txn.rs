@@ -32,7 +32,7 @@ impl<'a> Drop for Txn<'a> {
     fn drop(&mut self) {
         if !self.txn.is_null() {
             unsafe {
-                ffi::mdbx_txn_abort(self.txn);
+                ffi::mdbx_txn_abort_ex(self.txn, ptr::null_mut());
             }
             self.txn = ptr::null_mut();
         }

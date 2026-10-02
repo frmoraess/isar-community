@@ -6,7 +6,8 @@ env:
 on:
   push:
     tags:
-      - "*"
+      - "[0-9]*"
+      - "v[0-9]*"
 
 jobs:
   verify_version:

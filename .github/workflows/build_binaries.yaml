@@ -1,0 +1,72 @@
+name: Build Binaries
+
+on:
+  push:
+    tags:
+      - "binaries-*"
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Create pre-release
+        run: |
+          gh release create ${{ github.ref_name }} \
+            --prerelease \
+            --title "${{ github.ref_name }}" \
+            --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_binaries:
+    name: Build Binaries
+    needs: create_release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact_name: libisar_android_arm64.so
+            script: build_android.sh
+          - os: ubuntu-24.04
+            artifact_name: libisar_android_armv7.so
+            script: build_android.sh armv7
+          - os: ubuntu-24.04
+            artifact_name: libisar_android_x64.so
+            script: build_android.sh x64
+          - os: ubuntu-24.04
+            artifact_name: libisar_android_x86.so
+            script: build_android.sh x86
+          - os: macos-15
+            artifact_name: isar_ios.xcframework.zip
+            script: build_ios.sh
+          - os: ubuntu-24.04
+            artifact_name: libisar_linux_x64.so
+            script: build_linux.sh x64
+          - os: macos-15
+            artifact_name: libisar_macos.dylib
+            script: build_macos.sh
+          - os: windows-2022
+            artifact_name: isar_windows_x64.dll
+            script: build_windows.sh x64
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Build
+        uses: ./.github/actions/prepare-build
+      - name: Display Rust version
+        run: rustc --version && cargo --version
+      - name: Build binary
+        run: bash tool/${{ matrix.script }}
+      - name: Upload binary to release
+        run: |
+          gh release upload ${{ github.ref_name }} ${{ matrix.artifact_name }} \
+            --repo ${{ github.repository }} \
+            --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
